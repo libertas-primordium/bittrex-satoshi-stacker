@@ -4,10 +4,15 @@
 const express = require('express');
 const cors = require('cors');
 const { response } = require('express');
+const CryptoJS = require('crypto-js');
 require('dotenv').config();
 
-//TO-DO: api authentication function
 
+
+//TO-DO: api authentication function
+const uri = 'https://api.bittrex.com/v3/balances';
+const preSign = [timestamp, uri, method, contentHash, subaccountId].join('');
+const signature = CryptoJS.HmacSHA512(preSign, apiSecret).toString(CryptoJS.enc.Hex);
 
 //TO-DO: build api routes
         
