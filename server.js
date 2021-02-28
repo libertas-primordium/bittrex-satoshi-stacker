@@ -7,20 +7,33 @@ const { response } = require('express');
 const CryptoJS = require('crypto-js');
 require('dotenv').config();
 
+/// GLOBAL VARIABLES:
 
 
-//TO-DO: api authentication function
+
+
+//TO-DO: build api routes
+    //TO-DO: REST API
+        //TO-DO: REST_API authentication function
+const timestamp = new Date().getTime();
+const contentHash = CryptoJS.SHA512(content).toString(CryptoJS.enc.Hex);
 const uri = 'https://api.bittrex.com/v3/balances';
 const preSign = [timestamp, uri, method, contentHash, subaccountId].join('');
 const signature = CryptoJS.HmacSHA512(preSign, apiSecret).toString(CryptoJS.enc.Hex);
 
-//TO-DO: build api routes
+        //TO-DO: get balances
+        //TO-DO: get working orders
+        //TO-DO: post order
+        //TO-DO: cancel order
+
+    //TO-DO: WEBSOCKET API
+        //TO-DO: WEBSOCKET_API authentication function
+        //TO-DO: get price data
+        //TO-DO: connection alive test
         
-    //TO-DO: get balances
-    //TO-DO: get working orders
-    //TO-DO: get price data
-    //TO-DO: post order
-    //TO-DO: cancel order
+    
+    
+    
 
 //TO-DO: build logic
     //TO-DO: WMA
