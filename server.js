@@ -54,5 +54,5 @@ const signature = CryptoJS.HmacSHA512(preSign, apiSecret).toString(CryptoJS.enc.
                 then trigger buy or sell
             */
         //TO-DO: calculate order sizing based on inputs from WDB (and price arbitrage against index)?
-            //TO-DO: minimumSize * WDB/threshold
+            //TO-DO: minimumSize * (WDB/threshold)
             //TO-DO: check balance, if available > order size, send order
