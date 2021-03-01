@@ -4,22 +4,37 @@
 const express = require('express');
 const cors = require('cors');
 const { response } = require('express');
+const superagent = require('superagent');
 const CryptoJS = require('crypto-js');
+const prompt = require('prompt-sync')();
 require('dotenv').config();
 
 /// GLOBAL VARIABLES:
-
+// Check for API key/secret in .env file, prompt console for user input if not found.
+const KEY = proces.env.KEY || prompt('Enter API key: ');
+const SECRET = process.env.SECRET || prompt('Enter API secret: ');
 
 
 
 //TO-DO: build api routes
     //TO-DO: REST API
         //TO-DO: REST_API authentication function
-const timestamp = new Date().getTime();
-const contentHash = CryptoJS.SHA512(content).toString(CryptoJS.enc.Hex);
-const uri = 'https://api.bittrex.com/v3/balances';
-const preSign = [timestamp, uri, method, contentHash, subaccountId].join('');
-const signature = CryptoJS.HmacSHA512(preSign, apiSecret).toString(CryptoJS.enc.Hex);
+// create signed string for API authentication
+/**
+ * @param  {string} endpoint - API endpoint without leading slash, such as 'orders'
+ * @param  {string} method - 'GET', 'DELETE', or 'POST'
+ * @param  {string} content - query parameter string, optional.
+ */
+function bittrexAPICallAuthenicated(endpoint,method,content){
+    const content = content || ''
+    const timestamp = new Date().getTime()
+    const contentHash = CryptoJS.SHA512(content).toString(CryptoJS.enc.Hex)
+    const uri = `https://api.bittrex.com/v3/${endpoint}`
+    const preSign = [timestamp, uri, method, contentHash].join('')
+    const signature = CryptoJS.HmacSHA512(preSign, SECRET).toString(CryptoJS.enc.Hex)
+    return signature
+}
+
 
         //TO-DO: get balances
         //TO-DO: get working orders
