@@ -1,13 +1,35 @@
 {
   "dependencies": {
-    "@microsoft/signalr": "^5.0.3",
-    "cors": "^2.8.5",
-    "crypto-js": "^4.0.0",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "prompt-sync": "^4.2.0",
-    "superagent": "^6.1.0",
-    "uuid": "^8.3.2",
-    "zlib": "^1.0.5"
-  }
+    "bittrex-rest-client": "^2.0.1",
+    "dotenv": "^8.2.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "lint": "npx eslint ./",
+    "test": "npx mocha --slow 500 --timeout 5000 ./test"
+  },
+  "name": "bittrex-trader",
+  "description": "",
+  "version": "1.0.0",
+  "main": "server.js",
+  "devDependencies": {
+    "eslint": "^7.21.0",
+    "mocha": "^6.2.3",
+    "should": "^13.2.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/libertas-primordium/bittrex-trader.git"
+  },
+  "keywords": [
+    "bittrex",
+    "trading",
+    "api"
+  ],
+  "author": "libertas-primordium@github",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/libertas-primordium/bittrex-trader/issues"
+  },
+  "homepage": "https://github.com/libertas-primordium/bittrex-trader#readme"
 }
