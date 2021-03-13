@@ -14,6 +14,7 @@ describe('api-helper', () =>{
   it('should get an array of 243 30min candles from Bitstamp', async () =>{
     let candles = await client.fetchBitstamp()
     should.exist(candles)
+    console.log(candles)
     candles.length.should.be.equal(243)
   })
 
