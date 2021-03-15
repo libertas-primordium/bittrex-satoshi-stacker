@@ -6,7 +6,7 @@ const {ApiHelper} = require('../src')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=0.618,sellThreshold=-0.382,longBias=1.382) {
+  constructor(buyThreshold=0.618,sellThreshold=-0.382,longBias=2) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -17,6 +17,7 @@ class BittrexTrader {
     /// GLOBAL VARIABLES:
     this.WDB = [],
     this.index = [],
+    this.tradeCooldown = 0,
     this.buyThreshold = buyThreshold,
     this.sellThreshold = sellThreshold,
     this.longBias = longBias
@@ -105,17 +106,25 @@ async sleep(ms) {
     }
     const balance = await this.client.balances(currency)
     const minTrade = await this.getMinTrade(balance,direction)
-    const qty = minTrade * (wtddb / multiplier)
-    if (qty < balance){
-      const cancelOrders = await this.client.cancelOrder('open','BTC-USD')
-      const sendOrder = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price})
+    if (minTrade>balance) {
+      console.log(`balance too low: ${balance} < minTrade: ${minTrade}`)
+      return
     }
+    const qty = minTrade * (wtddb / multiplier)
+    if (qty > balance) qty = balance
+
+    await this.client.cancelOrder('open','BTC-USD')
+    console.log(`sending order: ${direction} ${qty} @ $${price}`)
+    const sendOrder = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price})
+    this.tradeCooldown = 10
+    return sendOrder
   }
 
   async compileIndex(){
     const coinbase = await this.apihelper.fetchCoinbase()
     const bitfinex = await this.apihelper.fetchBitfinex()
     const bitstamp = await this.apihelper.fetchBitstamp()
+    this.index = []
     for (let i=0;i<243;i++){
       const hlcv = {
         high:0,
@@ -140,25 +149,35 @@ async sleep(ms) {
   }
 
   async fillWDB(period=10){
-    this.WDB.slice(0,0)
+    this.WDB = []
     for (let i=0;i<period;i++){
-      this.WDB.unshift(await this.weightedDirectionalBias(this.index, i))
+      this.WDB.push(await this.weightedDirectionalBias(this.index, i))
     }
   }
 
   async calculateTrade(){
     const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] < this.WDB[2]  && this.WDB[0] > buyThreshold) this.trade('BUY',this.WDB[0],this.index[0])
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] < sellThreshold) this.trade('SELL',this.WDB[0],this.index[0])
+    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] < this.WDB[2]  && this.WDB[0] > buyThreshold && this.tradeCooldown < 1) {
+      console.log('calculating BUY trade...')
+      const buy = await this.trade('BUY',this.WDB[0],this.index[0])
+      console.log(`response: ${buy}`)
+    }
+    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] < sellThreshold && this.tradeCooldown < 1) {
+      console.log('calculating SELL trade...')
+      const sell = await this.trade('SELL',this.WDB[0],this.index[0])
+      console.log(`response: ${sell}`)
+    }
   }
 
   async run(){
     while (true){
+      if (this.tradeCooldown > 0) this.tradeCooldown--
       await this.compileIndex()
       await this.fillWDB()
-      console.log(this.WDB)
+      const timestamp = new Date().toISOString()
+      console.log(`${timestamp} Index price: ${this.index[0].close}, WDB: ${this.WDB[0]}`)
       await this.calculateTrade()
-      await this.sleep(1800000)
+      await this.sleep(180000)
     }
   }
 }

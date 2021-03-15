@@ -15,7 +15,7 @@ class ApiHelper {
   async fetchCoinbase(){
     const firstCandles = await this._client.request('https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=900')
     const secondCandles = await this._client.request(`https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=3600`)
-    secondCandles.data.splice(47)
+    secondCandles.data.splice(48)
     const joinedCandes = []
     for (let i=0; i<firstCandles.data.length-1; i=i+2){
       const hlcv = []
@@ -23,7 +23,7 @@ class ApiHelper {
       hlcv.push((firstCandles.data[i][1]+firstCandles.data[i+1][1])/2)
       hlcv.push((firstCandles.data[i][4]+firstCandles.data[i+1][4])/2)
       hlcv.push(firstCandles.data[i][5]+firstCandles.data[i][5])
-      joinedCandes.push(hlcv)
+            joinedCandes.push(hlcv)
     }
     for (let i in secondCandles.data){
       const hlcv = []
@@ -34,7 +34,15 @@ class ApiHelper {
       joinedCandes.push(hlcv)
       joinedCandes.push(hlcv)
     }
-    joinedCandes.pop()
+    joinedCandes.forEach(candle => {
+      for (let key of candle){
+        if (key === 'NaN') key = '0'
+      }
+    })
+    while (joinedCandes.length > 243){
+          joinedCandes.pop()
+
+    }
 
     return joinedCandes
   }
