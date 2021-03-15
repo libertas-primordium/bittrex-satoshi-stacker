@@ -1,7 +1,3 @@
-'use strict';
-
-/// PACKAGES:
-const express = require('express');
-const cors = require('cors');
-const { response } = require('express');
-require('dotenv').config();
+const BittrexTrader = require('./src/bittrextrader')
+const app = new BittrexTrader()
+app.run()
