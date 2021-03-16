@@ -176,14 +176,14 @@ async sleep(ms) {
 
   async calculateTrade(){
     const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= buyThreshold && this.tradeCooldown < 1) {
-      console.log(`${new Date().toISOString()} calculating BUY trade...`)
-      const buy = await this.trade('BUY',this.WDB[0],this.index[0].close)
+    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1) {
+      console.log(`${new Date().toISOString()} calculating SELL trade...`)
+      const buy = await this.trade('SELL',this.WDB[0],this.index[0].close)
       console.log(`${new Date().toISOString()} ${buy}`)
     }
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= sellThreshold && this.tradeCooldown < 1) {
-      console.log(`${new Date().toISOString()} calculating SELL trade...`)
-      const sell = await this.trade('SELL',this.WDB[0],this.index[0].close)
+    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
+      console.log(`${new Date().toISOString()} calculating BUY trade...`)
+      const sell = await this.trade('BUY',this.WDB[0],this.index[0].close)
       console.log(`${new Date().toISOString()} ${sell}`)
     }
   }
