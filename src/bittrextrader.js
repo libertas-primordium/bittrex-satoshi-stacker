@@ -3,10 +3,11 @@
 /// PACKAGES:
 const {BittrexClient} = require('bittrex-rest-client')
 const {ApiHelper} = require('../src')
+const uuid = require('uuid-random')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=0.618,sellThreshold=-0.382,longBias=2) {
+  constructor(buyThreshold=0.56,sellThreshold=-0.26,longBias=2) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -18,6 +19,7 @@ class BittrexTrader {
     this.WDB = [],
     this.index = [],
     this.tradeCooldown = 0,
+    this.statusReportCounter = 0;
     this.buyThreshold = buyThreshold,
     this.sellThreshold = sellThreshold,
     this.longBias = longBias
@@ -94,6 +96,7 @@ async sleep(ms) {
     const direction = dir
     const wtddb = await Math.abs(wdb)
     const price = currentPrice
+    let response = ''
     let multiplier = 0
     let currency = ''
     if (direction === 'BUY'){
@@ -107,17 +110,17 @@ async sleep(ms) {
     const balance = await this.client.balances(currency)
     const minTrade = await this.getMinTrade(balance,direction)
     if (minTrade>balance) {
-      console.log(`balance too low: ${balance} < minTrade: ${minTrade}`)
-      return
+      response = `${new Date().toISOString()} balance too low: ${balance} < minTrade: ${minTrade}`
+      return response
     }
     const qty = minTrade * (wtddb / multiplier)
     if (qty > balance) qty = balance
 
     await this.client.cancelOrder('open','BTC-USD')
-    console.log(`sending order: ${direction} ${qty} @ $${price}`)
-    const sendOrder = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price})
+    console.log(`${new Date().toISOString()} sending order: ${direction} ${qty} @ ${price}`)
+    response = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price},'GOOD_TIL_CANCELLED',uuid(),true)
     this.tradeCooldown = 10
-    return sendOrder
+    return response
   }
 
   async compileIndex(){
@@ -142,8 +145,24 @@ async sleep(ms) {
         parseFloat(bitstamp[i][3]),
         hlcv.volume
         )
-      hlcv.low = await this.vwap(coinbase[i][1],bitfinex[i][1],bitstamp[i][1],coinbase[i][3],bitfinex[i][3],bitstamp[i][3],hlcv.volume)
-      hlcv.close = await this.vwap(coinbase[i][2],bitfinex[i][2],bitstamp[i][2],coinbase[i][3],bitfinex[i][3],bitstamp[i][3],hlcv.volume)
+      hlcv.low = await this.vwap(
+        parseFloat(coinbase[i][1]),
+        parseFloat(bitfinex[i][1]),
+        parseFloat(bitstamp[i][1]),
+        parseFloat(coinbase[i][3]),
+        parseFloat(bitfinex[i][3]),
+        parseFloat(bitstamp[i][3]),
+        hlcv.volume
+        )
+      hlcv.close = await this.vwap(
+        parseFloat(coinbase[i][2]),
+        parseFloat(bitfinex[i][2]),
+        parseFloat(bitstamp[i][2]),
+        parseFloat(coinbase[i][3]),
+        parseFloat(bitfinex[i][3]),
+        parseFloat(bitstamp[i][3]),
+        hlcv.volume
+        )
       this.index.push(hlcv)
     }
   }
@@ -157,26 +176,29 @@ async sleep(ms) {
 
   async calculateTrade(){
     const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] < this.WDB[2]  && this.WDB[0] > buyThreshold && this.tradeCooldown < 1) {
-      console.log('calculating BUY trade...')
-      const buy = await this.trade('BUY',this.WDB[0],this.index[0])
-      console.log(`response: ${buy}`)
+    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= buyThreshold && this.tradeCooldown < 1) {
+      console.log(`${new Date().toISOString()} calculating BUY trade...`)
+      const buy = await this.trade('BUY',this.WDB[0],this.index[0].close)
+      console.log(`${new Date().toISOString()} ${buy}`)
     }
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] < sellThreshold && this.tradeCooldown < 1) {
-      console.log('calculating SELL trade...')
-      const sell = await this.trade('SELL',this.WDB[0],this.index[0])
-      console.log(`response: ${sell}`)
+    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= sellThreshold && this.tradeCooldown < 1) {
+      console.log(`${new Date().toISOString()} calculating SELL trade...`)
+      const sell = await this.trade('SELL',this.WDB[0],this.index[0].close)
+      console.log(`${new Date().toISOString()} ${sell}`)
     }
   }
 
   async run(){
     while (true){
-      if (this.tradeCooldown > 0) this.tradeCooldown--
       await this.compileIndex()
       await this.fillWDB()
-      const timestamp = new Date().toISOString()
-      console.log(`${timestamp} Index price: ${this.index[0].close}, WDB: ${this.WDB[0]}`)
+      if (this.statusReportCounter < 1){
+        console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}`)
+        this.statusReportCounter = 10
+      }
+      this.statusReportCounter--
       await this.calculateTrade()
+      if (this.tradeCooldown > 0) this.tradeCooldown--
       await this.sleep(180000)
     }
   }
