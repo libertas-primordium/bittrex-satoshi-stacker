@@ -60,16 +60,17 @@ class ApiHelper {
     }
     const lastCandle = await this._client.request('https://api-pub.bitfinex.com/v2/candles/trade:30m:tBTCUSD/last')
     const hlcv = []
-    hlcv.push(histCandles.data[3])
-    hlcv.push(histCandles.data[4])
-    hlcv.push(histCandles.data[2])
-    hlcv.push(histCandles.data[5])
+    hlcv.push(lastCandle.data[3])
+    hlcv.push(lastCandle.data[4])
+    hlcv.push(lastCandle.data[2])
+    hlcv.push(lastCandle.data[5])
     candles.push(hlcv)
     return candles
   }
 
   async fetchBitstamp(){
     const candles = await this._client.request('https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=1800&limit=243')
+    candles.data.data.ohlc.reverse()
     const candlesSanitized = []
     for (let i in candles.data.data.ohlc){
       const hlcv = []
