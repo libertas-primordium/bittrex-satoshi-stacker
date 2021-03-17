@@ -14,11 +14,11 @@ class ApiHelper {
   /// PUBLIC METHODS:
   async fetchCoinbase(){
     let joinedCandes = []
-    while (joinedCandes.length !== 243){
+    while (joinedCandes.length !== 253){
       joinedCandes = []
       const firstCandles = await this._client.request('https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=900')
       const secondCandles = await this._client.request(`https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=3600`)
-      secondCandles.data.splice(48)
+      secondCandles.data.splice(58)
       for (let i=0; i<firstCandles.data.length-1; i=i+2){
         const hlcv = []
         hlcv.push((firstCandles.data[i][2]+firstCandles.data[i+1][2])/2)
@@ -41,7 +41,7 @@ class ApiHelper {
           if (key === 'NaN') key = '0'
         }
       })
-      while (joinedCandes.length > 243){
+      while (joinedCandes.length > 253){
             joinedCandes.pop()
       }
     }
@@ -50,9 +50,9 @@ class ApiHelper {
 
   async fetchBitfinex(){
     let candles = []
-    while (candles.length !== 243){
+    while (candles.length !== 253){
       candles = []
-      const histCandles = await this._client.request('https://api-pub.bitfinex.com/v2/candles/trade:30m:tBTCUSD/hist?limit=242')
+      const histCandles = await this._client.request('https://api-pub.bitfinex.com/v2/candles/trade:30m:tBTCUSD/hist?limit=252')
       for (let i in histCandles.data) {
         const hlcv = []
         hlcv.push(histCandles.data[i][3])
@@ -75,9 +75,9 @@ class ApiHelper {
 
   async fetchBitstamp(){
     let candlesSanitized = []
-    while (candlesSanitized.length !== 243){
+    while (candlesSanitized.length !== 253){
       candlesSanitized = []
-      const candles = await this._client.request('https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=1800&limit=243')
+      const candles = await this._client.request('https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=1800&limit=253')
       candles.data.data.ohlc.reverse()
       for (let i in candles.data.data.ohlc){
         const hlcv = []
