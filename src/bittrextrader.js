@@ -53,17 +53,16 @@ async sleep(ms) {
   }
 
   async weightedDirectionalBias(data,offset){
-    const inputData = Array.from(data).slice(0,-1)
+    const inputData = Array.from(data)
     for (let i=0;i<offset;i++){
       inputData.shift()
-
     }
     const price = await this.volumeWeightedMovingAverage(inputData, 1)
     const vwma3 = await this.volumeWeightedMovingAverage(inputData, 3)
     const vwma9 = await this.volumeWeightedMovingAverage(inputData, 9)
     const vwma27 = await this.volumeWeightedMovingAverage(inputData, 27)
     const vwma81 = await this.volumeWeightedMovingAverage(inputData, 81)
-    const vwma243 = await this.volumeWeightedMovingAverage(inputData, inputData.length)
+    const vwma243 = await this.volumeWeightedMovingAverage(inputData, 243)
     const macd = ((vwma3-vwma9)+(vwma9-vwma27)+(vwma27-vwma81)+(vwma81-vwma243))
     return (price / (price - macd)) - 1
   }
@@ -128,7 +127,7 @@ async sleep(ms) {
     const bitfinex = await this.apihelper.fetchBitfinex()
     const bitstamp = await this.apihelper.fetchBitstamp()
     this.index = []
-    for (let i=0;i<243;i++){
+    for (let i=0;i<253;i++){
       const hlcv = {
         high:0,
         low:0,
