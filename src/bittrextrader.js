@@ -7,7 +7,7 @@ const uuid = require('uuid-random')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=0.56,sellThreshold=-0.26,longBias=2) {
+  constructor(buyThreshold=-0.3334,sellThreshold=0.6667,longBias=2) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -100,11 +100,11 @@ async sleep(ms) {
     let multiplier = 0
     let currency = ''
     if (direction === 'BUY'){
-      multiplier = buyThreshold
+      multiplier = this.buyThreshold
       currency = 'USD'
     }
     else if (direction === 'SELL'){
-      multiplier = sellThreshold
+      multiplier = this.sellThreshold
       currency = 'BTC'
     }
     const balance = await this.client.balances(currency)
@@ -181,7 +181,7 @@ async sleep(ms) {
       const buy = await this.trade('SELL',this.WDB[0],this.index[0].close)
       console.log(`${new Date().toISOString()} ${buy}`)
     }
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
+    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 6) {
       console.log(`${new Date().toISOString()} calculating BUY trade...`)
       const sell = await this.trade('BUY',this.WDB[0],this.index[0].close)
       console.log(`${new Date().toISOString()} ${sell}`)
