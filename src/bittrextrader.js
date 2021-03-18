@@ -7,7 +7,7 @@ const uuid = require('uuid-random')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=-0.3334,sellThreshold=0.6667) {
+  constructor(buyThreshold=-0.3334,sellThreshold=0.6667,hodlRatio=1.5) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -22,6 +22,7 @@ class BittrexTrader {
     this.statusReportCounter = 0;
     this.buyThreshold = buyThreshold,
     this.sellThreshold = sellThreshold,
+    this.hodlRatio = hodlRatio,
     this.longBias = 1
     this.balanceBTC = 0
     this.balanceUSD = 0
@@ -33,15 +34,14 @@ class BittrexTrader {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
-  async calcLongBias(){
-    const BTCtoUSD = this.balanceBTC * this.index[0].close
-    this.longBias = this.balanceBTC / BTCtoUSD
-  }
 
   async getBalances(){
-    this.balanceBTC = await this.client.balance('BTC')
-    this.balanceUSD = await this.client.balance('USD')
-    this.calcLongBias()
+    const getBalanceBTC = await this.client.balance('BTC')
+    const getBalanceUSD = await this.client.balance('USD')
+    this.balanceBTC = parseFloat(getBalanceBTC.available)
+    this.balanceUSD = parseFloat(getBalanceUSD.available)
+    this.balanceUSD = this.balanceUSD / this.index[0].close
+    this.longBias = this.balanceBTC / this.balanceUSD
   }
 
   async vwap(price1,price2,price3,volume1,volume2,volume3,totalvol){
@@ -98,7 +98,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * longBias
+    if (direction === 'BUY' && this.longBias > 1) qty = qty * longBias
     return qty
   }
 
@@ -106,13 +106,16 @@ class BittrexTrader {
     const direction = dir
     const wtddb = await Math.abs(wdb)
     const price = currentPrice
+    let balance = 0
     let response = ''
     let multiplier = 0
     if (direction === 'BUY'){
       multiplier = this.buyThreshold
+      balance = this.balanceUSD
     }
     else if (direction === 'SELL'){
       multiplier = Math.abs(this.sellThreshold)
+      balance = this.balanceBTC
     }
     const minTrade = await this.getMinTrade(balance,direction)
     if (minTrade>balance) {
@@ -190,7 +193,7 @@ class BittrexTrader {
 
   async calculateTrade(){
     const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias >= 1) {
+    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias >= this.hodlRatio) {
       console.log(`${new Date().toISOString()} calculating SELL trade...`)
       const buy = await this.trade('SELL',this.WDB[0],this.index[0].close)
       console.log(`${new Date().toISOString()} ${buy}`)
@@ -208,7 +211,7 @@ class BittrexTrader {
       await this.fillWDB()
       await this.getBalances()
       if (this.statusReportCounter < 1){
-        console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}`)
+        console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
         this.statusReportCounter = 10
       }
       this.statusReportCounter--
