@@ -211,9 +211,9 @@ class BittrexTrader {
       await this.fillWDB()
       await this.getBalances()
       if (this.statusReportCounter < 1){
-        console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
         this.statusReportCounter = 10
       }
+      console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
       this.statusReportCounter--
       await this.calculateTrade()
       if (this.tradeCooldown > 0) this.tradeCooldown--
