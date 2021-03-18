@@ -24,7 +24,7 @@ class ApiHelper {
         secondCandles = await this._client.request(`https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=3600`)
       }
       catch(error){
-        console.log(`${new Date().toISOString()} failed to retreive coinbase ${error}`)
+        console.log(`${new Date().toISOString()} failed to retreive coinbase, ${error}`)
       }
     }
     secondCandles.data.splice(58)
@@ -66,14 +66,14 @@ class ApiHelper {
         histCandles = await this._client.request('https://api-pub.bitfinex.com/v2/candles/trade:30m:tBTCUSD/hist?limit=252')
       }
       catch(error){
-        console.log(`${new Date().toISOString()} failed to retreive bitfinex ${error}`)
+        console.log(`${new Date().toISOString()} failed to retreive bitfinex, ${error}`)
       }
 
       try {
         lastCandle = await this._client.request('https://api-pub.bitfinex.com/v2/candles/trade:30m:tBTCUSD/last')
       }
       catch(error) {
-        console.log(`${new Date().toISOString()} failed to retreive bitfinex ${error}`)
+        console.log(`${new Date().toISOString()} failed to retreive bitfinex, ${error}`)
       }
     }
     for (let i in histCandles.data) {
@@ -103,7 +103,7 @@ class ApiHelper {
         candles = await this._client.request('https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=1800&limit=253')
       }
       catch(error){
-        console.log(`${new Date().toISOString()} failed to retrieve bitstamp ${error}`)
+        console.log(`${new Date().toISOString()} failed to retrieve bitstamp, ${error}`)
       }
 
     }
