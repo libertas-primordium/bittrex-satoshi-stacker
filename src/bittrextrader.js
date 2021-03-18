@@ -7,7 +7,7 @@ const uuid = require('uuid-random')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=-0.3334,sellThreshold=0.6667,hodlRatio=1.5) {
+  constructor(buyThreshold=-0.3334,sellThreshold=0.6667,hodlRatio=2) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -98,7 +98,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
-    if (direction === 'BUY' && this.longBias > 1) qty = qty * longBias
+    if (direction === 'BUY') qty = qty * (1 + (1 / longBias))
     return qty
   }
 
@@ -211,9 +211,9 @@ class BittrexTrader {
       await this.fillWDB()
       await this.getBalances()
       if (this.statusReportCounter < 1){
-        console.log(`${new Date().toISOString()} Index price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
         this.statusReportCounter = 10
       }
+      console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
       this.statusReportCounter--
       await this.calculateTrade()
       if (this.tradeCooldown > 0) this.tradeCooldown--
