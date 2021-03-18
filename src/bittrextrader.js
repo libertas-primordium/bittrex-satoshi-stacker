@@ -85,7 +85,7 @@ async sleep(ms) {
     for (let i in marketData){
       if (marketData[i].sumbol === 'BTC-USD') minTrade = marketData[i].minTradeSize
     }
-    if (minTrade / bal > 0.02) qty = bal * 0.02
+    if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
     if (direction === 'BUY') qty = qty * longBias
     return qty
@@ -123,9 +123,17 @@ async sleep(ms) {
   }
 
   async compileIndex(){
-    const coinbase = await this.apihelper.fetchCoinbase()
-    const bitfinex = await this.apihelper.fetchBitfinex()
-    const bitstamp = await this.apihelper.fetchBitstamp()
+    let coinbase = []
+    let bitfinex = []
+    let bitstamp = []
+    try{
+      coinbase = await this.apihelper.fetchCoinbase()
+      bitfinex = await this.apihelper.fetchBitfinex()
+      bitstamp = await this.apihelper.fetchBitstamp()
+    }
+    catch(error){
+      console.log(`${new Date().toISOString()} ${error}`)
+    }
     this.index = []
     for (let i=0;i<253;i++){
       const hlcv = {
