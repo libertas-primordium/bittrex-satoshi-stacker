@@ -26,6 +26,7 @@ class BittrexTrader {
     this.longBias = 1
     this.balanceBTC = 0
     this.balanceUSD = 0
+    this.portfolioValue = 0
   }
 
 
@@ -42,6 +43,7 @@ class BittrexTrader {
     this.balanceUSD = parseFloat(getBalanceUSD.available)
     this.balanceUSD = this.balanceUSD / this.index[0].close
     this.longBias = this.balanceBTC / this.balanceUSD
+    this.portfolioValue = (this.balanceBTC + this.balanceUSD) * this.index[0].close
   }
 
   async vwap(price1,price2,price3,volume1,volume2,volume3,totalvol){
@@ -98,7 +100,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * (1 + (1 / longBias))
+    if (direction === 'BUY') qty = qty * ((1 + (1 / longBias)) * 2)
     return qty
   }
 
@@ -213,7 +215,7 @@ class BittrexTrader {
       if (this.statusReportCounter < 1){
         this.statusReportCounter = 10
       }
-      console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}`)
+      console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
       this.statusReportCounter--
       await this.calculateTrade()
       if (this.tradeCooldown > 0) this.tradeCooldown--
