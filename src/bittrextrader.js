@@ -7,7 +7,7 @@ const uuid = require('uuid-random')
 require('dotenv').config()
 
 class BittrexTrader {
-  constructor(buyThreshold=-0.3334,sellThreshold=0.6667,hodlRatio=2) {
+  constructor(buyThreshold=-0.25,sellThreshold=0.5,hodlRatio=1.5) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -23,9 +23,9 @@ class BittrexTrader {
     this.buyThreshold = buyThreshold,
     this.sellThreshold = sellThreshold,
     this.hodlRatio = hodlRatio,
-    this.longBias = 1
-    this.balanceBTC = 0
-    this.balanceUSD = 0
+    this.longBias = 1,
+    this.balanceBTC = 0,
+    this.balanceUSD = 0,
     this.portfolioValue = 0
   }
 
@@ -37,8 +37,17 @@ class BittrexTrader {
 
 
   async getBalances(){
-    const getBalanceBTC = await this.client.balance('BTC')
-    const getBalanceUSD = await this.client.balance('USD')
+    let getBalanceBTC = {}
+    let getBalanceUSD = {}
+    while (!getBalanceUSD.available || !getBalanceBTC.available){
+      try{
+        getBalanceBTC = await this.client.balance('BTC')
+        getBalanceUSD = await this.client.balance('USD')
+      }
+      catch(error){
+        console.log(`${new Date().toISOString()} ${error}`)
+      }
+    }
     this.balanceBTC = parseFloat(getBalanceBTC.available)
     this.balanceUSD = parseFloat(getBalanceUSD.available)
     this.balanceUSD = this.balanceUSD / this.index[0].close
@@ -100,7 +109,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * ((1 + (1 / longBias)) * 2)
+    if (direction === 'BUY') qty = qty * ((1 + (1 / longBias)) * this.hodlRatio)
     return qty
   }
 
@@ -138,13 +147,15 @@ class BittrexTrader {
     let coinbase = []
     let bitfinex = []
     let bitstamp = []
-    try{
-      coinbase = await this.apihelper.fetchCoinbase()
-      bitfinex = await this.apihelper.fetchBitfinex()
-      bitstamp = await this.apihelper.fetchBitstamp()
-    }
-    catch(error){
-      console.log(`${new Date().toISOString()} ${error}`)
+    while (coinbase.length !== 253 || bitfinex.length !== 253 || bitstamp.length !== 253 ){
+      try{
+        coinbase = await this.apihelper.fetchCoinbase()
+        bitfinex = await this.apihelper.fetchBitfinex()
+        bitstamp = await this.apihelper.fetchBitstamp()
+      }
+      catch(error){
+        console.log(`${new Date().toISOString()} ${error}`)
+      }
     }
     this.index = []
     for (let i=0;i<253;i++){
@@ -195,7 +206,7 @@ class BittrexTrader {
 
   async calculateTrade(){
     const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias >= this.hodlRatio) {
+    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias > this.hodlRatio) {
       console.log(`${new Date().toISOString()} calculating SELL trade...`)
       let sell = {}
       try{
@@ -206,10 +217,11 @@ class BittrexTrader {
       }
       console.log(`${new Date().toISOString()} ${sell}`)
     }
-    else if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias < this.hodlRatio){
+    else if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] > this.sellThreshold && this.tradeCooldown < 1 && this.longBias <= this.hodlRatio){
       console.log(`${new Date().toISOString()} HODL!`)
     }
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 6) {
+
+    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
       console.log(`${new Date().toISOString()} calculating BUY trade...`)
       let buy = {}
       try{
