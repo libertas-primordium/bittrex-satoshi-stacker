@@ -5,9 +5,16 @@ const {BittrexClient} = require('bittrex-rest-client')
 const {ApiHelper} = require('../src')
 const uuid = require('uuid-random')
 require('dotenv').config()
-
+/**
+ * @method BittrexTrader Automated trading strategy.
+ * @param  {Number} buyThreshold=-0.025 - float. Should be positive.
+ * @param  {Number} sellThreshold=0.05 - float. Should be negative
+ * @param  {Number} hodlRatio=1.5 - float. Should be positive.
+ * @param  {Number} minTrendStrength=5 integer. Enum=[1,...8]
+ * @returns {Object}
+ */
 class BittrexTrader {
-  constructor(buyThreshold=-0.25,sellThreshold=0.5,hodlRatio=1.5) {
+  constructor(buyThreshold=-0.025,sellThreshold=0.05,hodlRatio=1.5,minTrendStrength=5) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -23,18 +30,17 @@ class BittrexTrader {
     this.buyThreshold = buyThreshold,
     this.sellThreshold = sellThreshold,
     this.hodlRatio = hodlRatio,
+    this.minTrendStrength = minTrendStrength,
     this.longBias = 1,
     this.balanceBTC = 0,
     this.balanceUSD = 0,
-    this.portfolioValue = 0
+    this.portfolioValue = 0,
+    this.strength = 0
   }
-
-
 
   async sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
-
 
   async getBalances(){
     let getBalanceBTC = {}
@@ -95,7 +101,7 @@ class BittrexTrader {
       if (this.WDB[i] > this.WDB[i+1]) strength++
       else if (this.WDB[i] < this.WDB[i+1]) strength--
     }
-    return strength
+    this.strength = strength
   }
 
   async getMinTrade(balance,dir){
@@ -205,8 +211,8 @@ class BittrexTrader {
   }
 
   async calculateTrade(){
-    const strength = await this.trendStrength()
-    if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias > this.hodlRatio) {
+    const strength = this.strength
+    if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias > this.hodlRatio) {
       console.log(`${new Date().toISOString()} calculating SELL trade...`)
       let sell = {}
       try{
@@ -217,11 +223,11 @@ class BittrexTrader {
       }
       console.log(`${new Date().toISOString()} ${sell}`)
     }
-    else if (strength >=7 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] > this.sellThreshold && this.tradeCooldown < 1 && this.longBias <= this.hodlRatio){
+    else if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] > this.sellThreshold && this.tradeCooldown < 1 && this.longBias <= this.hodlRatio){
       console.log(`${new Date().toISOString()} HODL!`)
     }
 
-    else if (strength <= -7 && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
+    else if (Math.abs(strength) >=5 && strength < 0  && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
       console.log(`${new Date().toISOString()} calculating BUY trade...`)
       let buy = {}
       try{
@@ -239,13 +245,16 @@ class BittrexTrader {
       await this.compileIndex()
       await this.fillWDB()
       await this.getBalances()
+      await this.trendStrength()
       if (this.statusReportCounter < 1){
         this.statusReportCounter = 10
+        console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Trend Strength: ${this.strength}, Position Ratio: ${this.longBias.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
       }
-      console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Position Ratio: ${this.longBias.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
       this.statusReportCounter--
       await this.calculateTrade()
-      if (this.tradeCooldown > 0) this.tradeCooldown--
+      if (this.tradeCooldown > 0) {
+        this.tradeCooldown--
+      }
       await this.sleep(180000)
     }
   }
