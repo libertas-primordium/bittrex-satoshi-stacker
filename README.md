@@ -40,7 +40,7 @@ $ npm install
 
 Install nodemon.
 ```
-$ npm install nodemon
+$ npm install -g nodemon
 ```
 
 Create a `.env` file in the root directory of the repository and add the following two lines:
