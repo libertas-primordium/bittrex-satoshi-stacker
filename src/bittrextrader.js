@@ -5,6 +5,8 @@ const {BittrexClient} = require('bittrex-rest-client')
 const {ApiHelper} = require('../src')
 const uuid = require('uuid-random')
 require('dotenv').config()
+
+//? CLASS
 /**
  * @method BittrexTrader Automated trading strategy.
  * @param  {Number} buyThreshold=-0.025 - float. Should be positive.
@@ -31,7 +33,7 @@ class BittrexTrader {
     this.sellThreshold = sellThreshold,
     this.hodlRatio = hodlRatio,
     this.minTrendStrength = minTrendStrength,
-    this.longBias = 1,
+    this.positionRatio = 1,
     this.balanceBTC = 0,
     this.balanceUSD = 0,
     this.portfolioValue = 0,
@@ -57,7 +59,7 @@ class BittrexTrader {
     this.balanceBTC = parseFloat(getBalanceBTC.available)
     this.balanceUSD = parseFloat(getBalanceUSD.available)
     this.balanceUSD = this.balanceUSD / this.index[0].close
-    this.longBias = this.balanceBTC / this.balanceUSD
+    this.positionRatio = this.balanceBTC / this.balanceUSD
     this.portfolioValue = (this.balanceBTC + this.balanceUSD) * this.index[0].close
   }
 
@@ -115,14 +117,14 @@ class BittrexTrader {
     }
     if (minTrade / bal < 0.02) qty = bal * 0.02
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * ((1 + (1 / longBias)) * this.hodlRatio)
+    if (direction === 'BUY') qty = qty * ((1 + (1 / this.positionRatio)) * this.hodlRatio)
     return qty
   }
 
   async trade(dir,wdb,currentPrice){
     const direction = dir
     const wtddb = await Math.abs(wdb)
-    const price = currentPrice
+    const price = currentPrice.toFixed(3)
     let balance = 0
     let response = ''
     let multiplier = 0
@@ -139,14 +141,14 @@ class BittrexTrader {
       response = `${new Date().toISOString()} balance too low: ${balance} < minTrade: ${minTrade}`
       return response
     }
-    const qty = minTrade * (wtddb / multiplier)
-    if (qty > balance) qty = balance
-
+    let qty = minTrade * (wtddb / multiplier)
+    if (qty < minTrade) qty = minTrade
+    qty = qty.toFixed(8)
     await this.client.cancelOrder('open','BTC-USD')
     console.log(`${new Date().toISOString()} sending order: ${direction} ${qty} @ ${price}`)
     response = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price},'GOOD_TIL_CANCELLED',uuid(),true)
     this.tradeCooldown = 10
-    return response
+    return JSON.stringify(response)
   }
 
   async compileIndex(){
@@ -212,7 +214,7 @@ class BittrexTrader {
 
   async calculateTrade(){
     const strength = this.strength
-    if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.tradeCooldown < 1 && this.longBias > this.hodlRatio) {
+    if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] >= this.sellThreshold && this.positionRatio > this.hodlRatio) {
       console.log(`${new Date().toISOString()} calculating SELL trade...`)
       let sell = {}
       try{
@@ -223,11 +225,11 @@ class BittrexTrader {
       }
       console.log(`${new Date().toISOString()} ${sell}`)
     }
-    else if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] > this.sellThreshold && this.tradeCooldown < 1 && this.longBias <= this.hodlRatio){
+    else if (Math.abs(strength) >=5 && strength > 0 && this.WDB[0] < this.WDB[1] && this.WDB[1] > this.WDB[2]  && this.WDB[0] > this.sellThreshold && this.positionRatio <= this.hodlRatio){
       console.log(`${new Date().toISOString()} HODL!`)
     }
 
-    else if (Math.abs(strength) >=5 && strength < 0  && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold && this.tradeCooldown < 1) {
+    else if (Math.abs(strength) >=5 && strength < 0  && this.WDB[0] > this.WDB[1] && this.WDB[1] < this.WDB[2] && this.WDB[0] <= this.buyThreshold) {
       console.log(`${new Date().toISOString()} calculating BUY trade...`)
       let buy = {}
       try{
@@ -248,10 +250,12 @@ class BittrexTrader {
       await this.trendStrength()
       if (this.statusReportCounter < 1){
         this.statusReportCounter = 10
-        console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Trend Strength: ${this.strength}, Position Ratio: ${this.longBias.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
+        console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Trend Strength: ${this.strength}, Position Ratio: ${this.positionRatio.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
       }
       this.statusReportCounter--
-      await this.calculateTrade()
+      if (this.tradeCooldown < 1){
+        await this.calculateTrade()
+      }
       if (this.tradeCooldown > 0) {
         this.tradeCooldown--
       }
