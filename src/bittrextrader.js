@@ -10,13 +10,14 @@ require('dotenv').config()
 /**
  * @method BittrexTrader Automated trading strategy.
  * @param  {Number} buyThreshold=-0.025 - float. Should be positive.
- * @param  {Number} sellThreshold=0.05 - float. Should be negative
+ * @param  {Number} sellThreshold=0.05 - float. Should be negative.
  * @param  {Number} hodlRatio=1.5 - float. Should be positive.
- * @param  {Number} minTrendStrength=5 integer. Enum=[1,...8]
+ * @param  {Number} minTrendStrength=5 integer. Enum=[1,...8].
+ * @param  {Number} tradeSize=0.02 float. Percentage expressed as float 0-1.
  * @returns {Object}
  */
 class BittrexTrader {
-  constructor(buyThreshold=-0.025,sellThreshold=0.05,hodlRatio=1.5,minTrendStrength=5) {
+  constructor(buyThreshold=-0.025,sellThreshold=0.05,hodlRatio=1.5,minTrendStrength=5,tradeSize=0.02) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -33,6 +34,7 @@ class BittrexTrader {
     this.sellThreshold = sellThreshold,
     this.hodlRatio = hodlRatio,
     this.minTrendStrength = minTrendStrength,
+    this.tradeSize = tradeSize,
     this.positionRatio = 1,
     this.balanceBTC = 0,
     this.balanceUSD = 0,
@@ -115,7 +117,7 @@ class BittrexTrader {
     for (let i in marketData){
       if (marketData[i].sumbol === 'BTC-USD') minTrade = marketData[i].minTradeSize
     }
-    if (minTrade / bal < 0.02) qty = bal * 0.02
+    if (minTrade / bal < this.tradeSize) qty = bal * this.tradeSize
     else qty = minTrade
     if (direction === 'BUY') qty = qty * ((1 + (1 / this.positionRatio)) * this.hodlRatio)
     return qty

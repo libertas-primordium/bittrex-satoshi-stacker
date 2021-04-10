@@ -60,6 +60,7 @@ Required parameters:
 2. `sellThreshold`: `float`. Default: `0.05`. Recommended range: `0.025` - `0.10`. This is the least **positive** value on the weighted directional bias indicator before the strategy will sell into a rally.
 3. `hodlRatio`: `float`. Default: `1.5`. This is the minimum ratio of BTC to USD in the account that the strategy will seek to maintain. If the account is below this ratio, the strategy will refrain from selling when a sell signal arises. A value of `1.0` would mean the strategy does not sell if less than half of the account value (in USD) is currently held in BTC.
 4. `minTrendStrength`: `integer`. Default: `5`. Range: `1` - `8`. This is how strongly weighted directional bias should have been trending leading up to the buy/sell signal in order for the strategy to act on the signal. A value of `1` would result in frequent trades and probably prove unprofitable, while a value of `8` would counter trade into only the most aggressive rallies and selloffs and would find far fewer trades.
+5. `tradeSize`: `float`. Percentage expressed as a float `0`-`1`. Default: `0.02`. This is the base trade size as a percentage relative to account balance, before the WDB multiplier is applied.
 
 Start the server by executing the following command within the root directory of the repository:
 ```
