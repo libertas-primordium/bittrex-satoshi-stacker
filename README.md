@@ -52,7 +52,7 @@ The API credentials need to have the 'READ INFO' and 'TRADE' permissions enabled
 
 Change the start parameters for the `BittrexTrader()` object in `server.js` to suit your needs:
 ```js
-const app = new BittrexTrader(buyThreshold,sellThreshold,hodlRatio,minTrendStrength)
+const app = new BittrexTrader(buyThreshold,sellThreshold,hodlRatio,minTrendStrength,tradeSize)
 ```
 Required parameters:
 1. `buyThreshold`: `float`, must be negative. Default: `-0.025`. Recommended range: `-0.0125` - `-0.05`. This is the least **negative** value on the weighted directional bias indicator before the strategy will buy into a selloff.
