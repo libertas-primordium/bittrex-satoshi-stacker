@@ -17,7 +17,7 @@ require('dotenv').config()
  * @returns {Object}
  */
 class BittrexTrader {
-  constructor(buyThreshold=-0.025,sellThreshold=0.05,hodlRatio=1.5,minTrendStrength=5,tradeSize=0.02) {
+  constructor(buyThreshold=-0.025,sellThreshold=0.05,hodlRatio=1.5,minTrendStrength=5,tradeSize=0.02,test=true) {
     this.client = new BittrexClient({
     apiKey: process.env.KEY,
     apiSecret: process.env.SECRET,
@@ -35,6 +35,7 @@ class BittrexTrader {
     this.hodlRatio = hodlRatio,
     this.minTrendStrength = minTrendStrength,
     this.tradeSize = tradeSize,
+    this.test = test,
     this.positionRatio = 1,
     this.balanceBTC = 0,
     this.balanceUSD = 0,
@@ -147,9 +148,11 @@ class BittrexTrader {
     let qty = minTrade * (wtddb / multiplier)
     if (qty < minTrade) qty = minTrade
     qty = qty.toFixed(8)
-    await this.client.cancelOrder('open','BTC-USD')
     console.log(`${new Date().toISOString()} sending order: ${direction} ${qty} @ ${price}`)
-    response = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price},'GOOD_TIL_CANCELLED',uuid(),true)
+    if (this.test === false){
+      await this.client.cancelOrder('open','BTC-USD')
+      response = await this.client.sendOrder('BTC-USD', direction, 'LIMIT',{quantity:qty,limit:price},'GOOD_TIL_CANCELLED',uuid(),true)
+    }
     this.tradeCooldown = 10
     return JSON.stringify(response)
   }
