@@ -6,7 +6,7 @@ const {ApiHelper} = require('../src')
 const uuid = require('uuid-random')
 require('dotenv').config()
 
-//? CLASS
+/// CLASS
 /**
  * @method BittrexTrader Automated trading strategy.
  * @param  {Number} buyThreshold=-0.025 - float. Should be positive.
@@ -39,7 +39,8 @@ class BittrexTrader {
     this.balanceBTC = 0,
     this.balanceUSD = 0,
     this.portfolioValue = 0,
-    this.strength = 0
+    this.strength = 0,
+    this.buyMultiplier = sellThreshold - Math.abs(buyThreshold)
   }
 
   async sleep(ms) {
@@ -119,7 +120,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < this.tradeSize) qty = bal * this.tradeSize
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * ((1 + (1 / this.positionRatio)) * this.hodlRatio)
+    if (direction === 'BUY') qty = qty * ((1 + (1 / this.positionRatio)) * this.hodlRatio) * this.buyMultiplier
     return qty
   }
 
