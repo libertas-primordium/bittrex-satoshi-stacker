@@ -120,7 +120,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < this.tradeSize) qty = bal * this.tradeSize
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * ((1 + (1 / this.positionRatio)) * this.hodlRatio) * this.buyMultiplier
+    if (direction === 'BUY') qty = qty * (1 + ( (1 / this.positionRatio)) * this.hodlRatio) * this.buyMultiplier
     return qty
   }
 
