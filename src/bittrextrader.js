@@ -41,7 +41,7 @@ class BittrexTrader {
     this.balanceUSD = 0,
     this.portfolioValue = 0,
     this.strength = 0,
-    this.buyMultiplier = sellThreshold - Math.abs(buyThreshold)
+    this.buyMultiplier = sellThreshold / Math.abs(buyThreshold)
   }
 
   async sleep(ms) {
