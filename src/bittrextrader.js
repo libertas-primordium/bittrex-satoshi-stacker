@@ -117,7 +117,7 @@ class BittrexTrader {
     let minTrade = 0
     let qty = 0
     for (let i in marketData){
-      if (marketData[i].sumbol === 'BTC-USD') minTrade = marketData[i].minTradeSize
+      if (marketData[i].symbol === 'BTC-USD') minTrade = marketData[i].minTradeSize
     }
     if (minTrade / bal < this.tradeSize) qty = bal * this.tradeSize
     else qty = minTrade
