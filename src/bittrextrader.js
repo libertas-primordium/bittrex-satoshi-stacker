@@ -110,8 +110,8 @@ class BittrexTrader {
     this.strength = strength
   }
 
-  async getMinTrade(balance,dir){
-    const bal = balance
+  async getMinTrade(dir){
+    const bal = this.portfolioValue / this.index[0].close
     const marketData = await this.client.markets()
     const direction = dir
     let minTrade = 0
@@ -121,7 +121,7 @@ class BittrexTrader {
     }
     if (minTrade / bal < this.tradeSize) qty = bal * this.tradeSize
     else qty = minTrade
-    if (direction === 'BUY') qty = qty * (1 + ( (1 / this.positionRatio)) * this.hodlRatio) * this.buyMultiplier
+    if (direction === 'BUY') qty = qty * (1 + (1 / this.positionRatio)) * this.buyMultiplier
     return qty
   }
 
@@ -140,7 +140,7 @@ class BittrexTrader {
       multiplier = Math.abs(this.sellThreshold)
       balance = this.balanceBTC
     }
-    const minTrade = await this.getMinTrade(balance,direction)
+    const minTrade = await this.getMinTrade(direction)
     if (minTrade>balance) {
       response = `${new Date().toISOString()} balance too low: ${balance} < minTrade: ${minTrade}`
       return response
@@ -254,11 +254,11 @@ class BittrexTrader {
       await this.fillWDB()
       await this.getBalances()
       await this.trendStrength()
-      if (this.statusReportCounter < 1){
-        this.statusReportCounter = 10
-        console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Trend Strength: ${this.strength}, Position Ratio: ${this.positionRatio.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
-      }
-      this.statusReportCounter--
+      //if (this.statusReportCounter < 1){
+        //this.statusReportCounter = 10
+        //console.log(`${new Date().toISOString()} Index Price: ${this.index[0].close.toFixed(2)}, WDB: ${this.WDB[0].toFixed(4)}, Trend Strength: ${this.strength}, Position Ratio: ${this.positionRatio.toFixed(2)}, Portfolio Value: ${this.portfolioValue.toFixed(2)}`)
+      //}
+      //this.statusReportCounter--
       if (this.tradeCooldown < 1){
         await this.calculateTrade()
       }
