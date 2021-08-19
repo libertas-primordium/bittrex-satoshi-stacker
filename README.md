@@ -23,6 +23,10 @@ If weighted directional bias has been **trending lower**, is currently **negativ
 If weighted directional bias has been **trending higher**, is currently **positive**, and has just **turned lower**, and the account's BTC to USD ratio is **not below** the `hodlRatio` parameter, the strategy will execute a **SELL** order, with order size scaled by how extreme a **positive** value is calculated by the weighted directional bias indicator.
 
 The strategy places a limit GTC order at the prevailing close price on the volume weighted bitcoin index. This order remains until it either fills, or the strategy receives a new trade signal (trade signals are limited to not more than every 30 minutes) at which time it simple cancels all open orders in the BTCUSD market before placing a new one. There is room for improvement in regards to order management and I may work on this in the near future.
+
+Here is a screenshot of past trades executed by the script taken on 08/19/2021:
+
+![screenshot](./Screenshot.png "08/19/2021")
 ___
 ## Usage:
 Dependencies: `node`, `nodemon`
